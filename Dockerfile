@@ -13,7 +13,9 @@ RUN apt-get update && \
   software-properties-common \
   imagemagick \
   wget \
-  gnupg2
+  gnupg2 \
+  python3 \
+  python3-pip
 
 RUN apt-get install -y \
   socat \
@@ -42,4 +44,7 @@ ENV VNC_PORT=5900
 
 # 7) Expose port 5900 and run Xvfb, x11vnc, Xfce (no login manager)
 EXPOSE ${VNC_PORT}
-CMD ["/bin/sh", "-c", "  Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &   while ! xdpyinfo -display :99 >/dev/null 2>&1; do sleep 0.1; done &&   xpra start :1 --bind-tcp=0.0.0.0:14500 --html=on --auth=env --env=XPRA_PASSWORD=$XPRA_PASSWORD >/dev/null 2>&1 &   export DISPLAY=:99 &&   startxfce4 >/dev/null 2>&1 &   tail -f /dev/null"]
+COPY requirements.txt ./
+RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt
+COPY desktop_rpc_server.py ./
+CMD ["/bin/sh", "-c", "Xvfb :99 -screen 0 1280x800x24 & while ! xdpyinfo -display :99 >/dev/null 2>&1; do sleep 0.1; done; xpra start :1 --bind-tcp=0.0.0.0:14500 --html=on --auth=env --env=XPRA_PASSWORD=$XPRA_PASSWORD & export DISPLAY=:99; startxfce4 & python3 desktop_rpc_server.py & tail -f /dev/null"]
